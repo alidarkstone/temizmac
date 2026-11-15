@@ -52,7 +52,7 @@ enum Maintenance {
                         command: "/usr/sbin/diskutil verifyVolume /", enabled: false)
     ]
 
-    static let logURL = SafetyGuard.home.appendingPathComponent("Library/Logs/Cleanstone/maintenance.log")
+    static let logURL = SafetyGuard.home.appendingPathComponent("Library/Logs/Magicstone/maintenance.log")
 
     /// Kullanıcı yetkisiyle çalıştırır; (başarı, çıktı) döner.
     static func runUser(_ command: String) -> (Bool, String) {

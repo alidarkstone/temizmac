@@ -20,7 +20,7 @@ enum OrphanScanner {
     static let excludedPrefixes = [
         "com.apple", "group.com.apple", "org.cups", "com.openssh", "org.openssh", "org.python",
         "com.microsoft.autoupdate", "com.google.keystone", "com.adobe.acc", "com.oracle.java",
-        "org.mozilla.updater", "com.cleanstone", "local.cleanstone"
+        "org.mozilla.updater", "com.magicstone", "local.magicstone"
     ]
 
     // MARK: Kurulu paket kimlikleri
@@ -83,7 +83,19 @@ enum OrphanScanner {
         var sure: [FileItem] = [], maybe: [FileItem] = []
         var seen = Set<String>()
         let fm = FileManager.default
-        for dir in dirs {
+        // pkgutil: dosyaları artık diskte olmayan Apple dışı paket kayıtları
+        let receipts = URL(fileURLWithPath: "/private/var/db/receipts")
+        let deadPkgs = orphanPackageIDs()
+        if let list = try? fm.contentsOfDirectory(at: receipts, includingPropertiesForKeys: nil) {
+            for u in list {
+                let id = u.deletingPathExtension().lastPathComponent.lowercased()
+                guard deadPkgs.contains(id), (try? SafetyGuard.validate(u, allowApplications: true)) != nil else { continue }
+                seen.insert(u.path)
+                sure.append(FileItem(url: u, size: DiskScanner.allocatedSize(of: u), modified: nil, selected: true))
+            }
+        }
+
+        for dir in dirs where dir.path != receipts.path {
             guard let list = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])
             else { continue }
             for u in list {
@@ -104,6 +116,35 @@ enum OrphanScanner {
             }
         }
         return Result(sure: sure.sorted { $0.size > $1.size }, maybe: maybe.sorted { $0.size > $1.size })
+    }
+
+    /// `pkgutil --pkgs` içinden, üst düzey dosyalarının hiçbiri artık var olmayan paketler.
+    static func orphanPackageIDs() -> Set<String> {
+        let (_, pkgs) = Maintenance.runUser("/usr/sbin/pkgutil --pkgs")
+        var dead = Set<String>()
+        for id in pkgs.split(separator: "\n").map(String.init) {
+            let lid = id.lowercased()
+            if excludedPrefixes.contains(where: { lid.hasPrefix($0) }) { continue }
+            let (_, info) = Maintenance.runUser("/usr/sbin/pkgutil --pkg-info \(Performance.q(id))")
+            var volume = "/", location = ""
+            for line in info.split(separator: "\n") {
+                if line.hasPrefix("volume: ") { volume = String(line.dropFirst(8)) }
+                if line.hasPrefix("location: ") { location = String(line.dropFirst(10)) }
+            }
+            let base = URL(fileURLWithPath: volume).appendingPathComponent(location)
+            // Ortak sistem dizinleri (Library, usr…) kanıt sayılmaz; somut alt yollara bak.
+            let (_, all) = Maintenance.runUser("/usr/sbin/pkgutil --files \(Performance.q(id)) | /usr/bin/awk -F/ 'NF<=3' | /usr/bin/head -400")
+            let generic: Set<String> = ["Library", "usr", "private", "etc", "var", "opt", "Applications", "System", "Users",
+                                        "Library/Application Support", "Library/LaunchDaemons", "Library/LaunchAgents",
+                                        "Library/PrivilegedHelperTools", "Library/Preferences", "usr/local", "usr/local/bin",
+                                        "usr/local/lib", "Library/Frameworks", "Library/Extensions", "Library/Audio",
+                                        "Library/Audio/Plug-Ins", "Library/Internet Plug-Ins", "Library/PreferencePanes"]
+            let specific = all.split(separator: "\n").map(String.init).filter { !generic.contains($0) && !$0.isEmpty }
+            guard !specific.isEmpty else { continue }
+            let anyExists = specific.contains { FileManager.default.fileExists(atPath: base.appendingPathComponent($0).path) }
+            if !anyExists { dead.insert(lid) }
+        }
+        return dead
     }
 
     private static func isInstalled(_ bid: String, installed: Set<String>) -> Bool {

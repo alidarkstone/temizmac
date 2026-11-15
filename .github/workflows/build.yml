@@ -14,11 +14,11 @@ jobs:
       - name: Build app
         run: bash scripts/build-app.sh
       - name: Zip
-        run: cd build && ditto -c -k --keepParent Cleanstone.app Cleanstone.zip
+        run: cd build && ditto -c -k --keepParent Magicstone.app Magicstone.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: Cleanstone
-          path: build/Cleanstone.zip
+          name: Magicstone
+          path: build/Magicstone.zip
       - name: GitHub Release (Info.plist sürümü yeniyse)
         if: github.ref == 'refs/heads/main'
         env:
@@ -26,8 +26,8 @@ jobs:
         run: |
           V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
           if gh release view "v$V" >/dev/null 2>&1; then
-            gh release upload "v$V" build/Cleanstone.zip --clobber && gh release edit "v$V" --notes-file RELEASE_NOTES.md
+            gh release upload "v$V" build/Magicstone.zip --clobber && gh release edit "v$V" --notes-file RELEASE_NOTES.md
           else
-            gh release create "v$V" build/Cleanstone.zip --target "$GITHUB_SHA" \
-              --title "Cleanstone v$V" --notes-file RELEASE_NOTES.md
+            gh release create "v$V" build/Magicstone.zip --target "$GITHUB_SHA" \
+              --title "Magicstone v$V" --notes-file RELEASE_NOTES.md
           fi

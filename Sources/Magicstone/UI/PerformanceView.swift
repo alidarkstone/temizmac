@@ -10,6 +10,11 @@ struct PerformanceView: View {
     @State private var procs: [Performance.Proc] = []
     @State private var byMemory = true
     @State private var busy = false
+    @State private var confirmApply = false
+
+    private var chosenEffects: [String] {
+        tweaks.filter { chosen.contains($0.id) }.compactMap { t in t.sideEffect.map { "• \(t.title): \($0)" } }
+    }
 
     private var groups: [String] { tweaks.reduce(into: [String]()) { if !$0.contains($1.group) { $0.append($1.group) } } }
 
@@ -24,7 +29,7 @@ struct PerformanceView: View {
                 Spacer()
                 Button("Geri Al") { Task { await revert() } }
                     .disabled(busy || saved.isEmpty)
-                Button(s.dryRun ? "Önizle" : "Seçilenleri Uygula") { Task { await apply() } }
+                Button(s.dryRun ? "Önizle" : "Seçilenleri Uygula") { confirmApply = true }
                     .buttonStyle(.borderedProminent)
                     .disabled(busy || chosen.isEmpty)
             }.padding()
@@ -44,6 +49,9 @@ struct PerformanceView: View {
                                         if t.applied { Badge(text: "Uygulandı", color: .green) }
                                     }
                                     Text(t.detail).font(.caption).foregroundStyle(.secondary)
+                                    if let fx = t.sideEffect {
+                                        Text("Yan etki: \(fx)").font(.caption2).foregroundStyle(.orange)
+                                    }
                                 }
                             }
                         }
@@ -117,6 +125,13 @@ struct PerformanceView: View {
             }
         }
         .task { await loadAll() }
+        .confirmationDialog("\(chosen.count) ayar uygulansın mı?", isPresented: $confirmApply) {
+            Button(s.dryRun ? "Önizle" : "Uygula") { Task { await apply() } }
+        } message: {
+            Text(chosenEffects.isEmpty
+                 ? "Bilinen yan etkisi yok. Önceki değerler saklanır; Geri Al ile dönebilirsiniz."
+                 : "Yan etkiler:\n" + chosenEffects.joined(separator: "\n") + "\n\nÖnceki değerler saklanır; Geri Al ile dönebilirsiniz.")
+        }
         .onChange(of: byMemory) { _ in Task { await loadProcs() } }
     }
 

@@ -2,14 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>Cleanstone</string>
-  <key>CFBundleDisplayName</key><string>Cleanstone</string>
-  <key>CFBundleIdentifier</key><string>local.cleanstone.app</string>
-  <key>CFBundleExecutable</key><string>Cleanstone</string>
+  <key>CFBundleName</key><string>Magicstone</string>
+  <key>CFBundleDisplayName</key><string>Magicstone</string>
+  <key>CFBundleIdentifier</key><string>local.magicstone.app</string>
+  <key>CFBundleExecutable</key><string>Magicstone</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
-  <key>CFBundleVersion</key><string>2</string>
+  <key>CFBundleShortVersionString</key><string>1.1.0</string>
+  <key>CFBundleVersion</key><string>3</string>
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>NSAppleEventsUsageDescription</key><string>Korumalı uygulamaları Finder ile Çöp Sepeti'ne taşımak için gerekir.</string>
   <key>NSHighResolutionCapable</key><true/>

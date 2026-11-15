@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-enum Pane: Hashable { case smart, maintenance, performance, category(String), orphans, large, duplicates, uninstall, launch }
+enum Pane: Hashable { case smart, audit, maintenance, performance, category(String), orphans, large, duplicates, uninstall, launch }
 
 struct ContentView: View {
     @EnvironmentObject var s: AppState
@@ -11,6 +11,7 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $pane) {
                 Label("Akıllı Tarama", systemImage: "sparkles").tag(Pane.smart)
+                Label("Denetim", systemImage: "stethoscope").tag(Pane.audit)
                 Label("Bakım", systemImage: "wrench.and.screwdriver").tag(Pane.maintenance)
                 Label("Performans", systemImage: "speedometer").tag(Pane.performance)
                 Section("Temizlik") {
@@ -43,6 +44,7 @@ struct ContentView: View {
                 case .smart: SmartView()
                 case .category(let id): CategoryView(cat: Categories.all.first { $0.id == id }!)
                 case .large: LargeFilesView()
+                case .audit: AuditView()
                 case .maintenance: MaintenanceView()
                 case .performance: PerformanceView()
                 case .orphans: OrphansView()
@@ -53,7 +55,7 @@ struct ContentView: View {
                 StatusBar()
             }
         }
-        .alert("Cleanstone", isPresented: Binding(get: { s.alertMessage != nil },
+        .alert("Magicstone", isPresented: Binding(get: { s.alertMessage != nil },
                                                   set: { if !$0 { s.alertMessage = nil } })) {
             Button("Tamam") { s.alertMessage = nil }
         } message: { Text(s.alertMessage ?? "") }
@@ -107,7 +109,7 @@ struct SmartView: View {
             VStack(spacing: 18) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 112, height: 112)
                     .padding(.top, 24)
-                Text("Cleanstone").font(.largeTitle.bold())
+                Text("Magicstone").font(.largeTitle.bold())
                 Text("Telemetri yok. Ağ erişimi yok. Her şey bu Mac'te kalır.").foregroundStyle(.secondary)
                 DiskBar(info: s.disk)
                     .frame(maxWidth: 520)
@@ -179,6 +181,7 @@ struct DiskBar: View {
 
 struct ItemRow: View {
     @Binding var item: FileItem
+    @State private var kept = false
     var body: some View {
         HStack {
             Toggle("", isOn: $item.selected).labelsHidden()
@@ -193,6 +196,16 @@ struct ItemRow: View {
                 Image(systemName: "magnifyingglass")
             }.buttonStyle(.borderless).help("Finder'da göster")
         }
+        .opacity(kept ? 0.4 : 1)
+        .contextMenu {
+            Button("Finder'da Göster") { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+            Button(kept ? "Tut listesinden çıkar" : "Tut (bir daha önerme)") {
+                if kept { KeepList.remove(item.url.standardizedFileURL.path) } else { KeepList.add(item.url) }
+                item.selected = false
+                kept.toggle()
+            }
+        }
+        .onAppear { kept = KeepList.contains(item.url) }
     }
 }
 

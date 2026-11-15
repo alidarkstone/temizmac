@@ -1,4 +1,4 @@
-## Cleanstone 1.0.0
+## Magicstone 1.1.0
 
 Telemetri yok, ağ erişimi yok. Her şey bu Mac'te kalır.
 
@@ -12,7 +12,11 @@ Telemetri yok, ağ erişimi yok. Her şey bu Mac'te kalır.
 - Başlangıç öğeleri: yetim LaunchAgent'ları bulur ve kaldırır
 - Menü çubuğu: disk durumu, hızlı tarama
 
-**Güvenlik:** Önizleme modu varsayılan açık; silinenler Çöp Sepeti'ne gider; korumalı yollar; yerel işlem günlüğü.
+- Denetim: salt-okunur sistem raporu (SIP, FileVault, Gatekeeper, disk, ayarlar, ajanlar, kalıntılar) dosyaya yazılır
+- Tut listesi: sağ tık → "Tut" ile bir öğe bir daha önerilmez ve asla taşınmaz
+- Eski paket kayıtları `pkgutil` ile doğrulanır
 
-**Kurulum:** Zip'i aç → `Cleanstone.app`'i Uygulamalar'a taşı → ilk açılışta sağ tık → **Aç**.
+**Güvenlik:** Önizleme modu varsayılan açık; silinenler Çöp Sepeti'ne gider; korumalı yollar (Anahtar Zinciri, iCloud, Fotoğraflar, Metal/shader önbellekleri); SIP/Gatekeeper/FileVault/güvenlik duvarı/güncellemelere asla dokunulmaz; yerel işlem günlüğü.
+
+**Kurulum:** Zip'i aç → `Magicstone.app`'i Uygulamalar'a taşı → ilk açılışta sağ tık → **Aç**.
 Uygulama Apple tarafından notarize edilmemiştir (ücretli geliştirici hesabı gerekir).

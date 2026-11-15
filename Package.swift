@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "Cleanstone",
+    name: "Magicstone",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "Cleanstone",
-            path: "Sources/Cleanstone"
+            name: "Magicstone",
+            path: "Sources/Magicstone"
         )
     ]
 )

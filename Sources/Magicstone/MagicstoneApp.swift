@@ -2,11 +2,11 @@ import SwiftUI
 import AppKit
 
 @main
-struct CleanstoneApp: App {
+struct MagicstoneApp: App {
     @StateObject private var state = AppState()
 
     var body: some Scene {
-        Window("Cleanstone", id: "main") {
+        Window("Magicstone", id: "main") {
             ContentView()
                 .environmentObject(state)
                 .frame(minWidth: 900, minHeight: 580)
@@ -44,7 +44,7 @@ struct MenuBarContent: View {
             HStack(spacing: 10) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 32, height: 32)
                 VStack(alignment: .leading) {
-                    Text("Cleanstone").font(.headline)
+                    Text("Magicstone").font(.headline)
                     Text(s.dryRun ? "Önizleme modu açık" : "Gerçek mod").font(.caption)
                         .foregroundStyle(s.dryRun ? .blue : .red)
                 }
@@ -59,7 +59,7 @@ struct MenuBarContent: View {
                 Button("Tara") { Task { await s.scanAll(); s.refreshDisk() } }
                     .disabled(!s.scanning.isEmpty)
                 Spacer()
-                Button("Cleanstone'u Aç") {
+                Button("Magicstone'u Aç") {
                     openWindow(id: "main")
                     NSApp.activate(ignoringOtherApps: true)
                 }.buttonStyle(.borderedProminent)

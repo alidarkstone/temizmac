@@ -14,6 +14,7 @@ struct Tweak: Identifiable, Hashable {
     let value: String
     var admin: Bool = false
     var restart: String? = nil   // ör. "Dock", "Finder"
+    var sideEffect: String? = nil
     var applied: Bool = false
 }
 
@@ -21,10 +22,10 @@ enum Performance {
     static let tweaks: [Tweak] = [
         Tweak(id: "reduceMotion", group: "Görsel efektler", title: "Hareketi azalt",
               detail: "Masaüstü geçişlerinde kayma yerine solma kullanılır.",
-              domain: "com.apple.universalaccess", key: "reduceMotion", kind: .bool, value: "true"),
+              domain: "com.apple.universalaccess", key: "reduceMotion", kind: .bool, value: "true", sideEffect: "Masaüstü geçişleri kayma yerine solarak olur."),
         Tweak(id: "reduceTransparency", group: "Görsel efektler", title: "Saydamlığı azalt",
               detail: "Bulanık arka planlar kapanır; GPU yükü azalır.",
-              domain: "com.apple.universalaccess", key: "reduceTransparency", kind: .bool, value: "true"),
+              domain: "com.apple.universalaccess", key: "reduceTransparency", kind: .bool, value: "true", sideEffect: "Menü çubuğu, Dock ve kenar çubukları opak (düz renk) görünür."),
         Tweak(id: "windowAnim", group: "Görsel efektler", title: "Pencere açılış animasyonunu kapat",
               detail: "Yeni pencereler anında açılır.",
               domain: "NSGlobalDomain", key: "NSAutomaticWindowAnimationsEnabled", kind: .bool, value: "false"),
@@ -46,22 +47,22 @@ enum Performance {
         Tweak(id: "analytics", group: "Gizlilik (telemetri)", title: "Apple'a analiz verisi gönderme",
               detail: "Mac Analizleri'ni paylaş seçeneğini kapatır.",
               domain: "/Library/Application Support/CrashReporter/DiagnosticMessagesHistory",
-              key: "AutoSubmit", kind: .bool, value: "false", admin: true),
+              key: "AutoSubmit", kind: .bool, value: "false", admin: true, sideEffect: "Apple, sizin Mac'inizdeki hatalardan haberdar olmaz; yalnızca gizlilik kazancı, işlev kaybı yok."),
         Tweak(id: "thirdParty", group: "Gizlilik (telemetri)", title: "Geliştiricilerle çökme verisi paylaşma",
               detail: "Uygulama geliştiricilerine kilitlenme raporu gönderilmez.",
               domain: "/Library/Application Support/CrashReporter/DiagnosticMessagesHistory",
-              key: "ThirdPartyDataSubmit", kind: .bool, value: "false", admin: true),
+              key: "ThirdPartyDataSubmit", kind: .bool, value: "false", admin: true, sideEffect: "Geliştiriciler çökme raporlarınızı görmez; hata düzeltmeleri gecikebilir."),
         Tweak(id: "lookupSuggestions", group: "Gizlilik (telemetri)", title: "Spotlight/Sorgula önerilerini kapat",
               detail: "Arama sorguları öneri için Apple'a gönderilmez.",
-              domain: "com.apple.lookup.shared", key: "LookupSuggestionsDisabled", kind: .bool, value: "true"),
+              domain: "com.apple.lookup.shared", key: "LookupSuggestionsDisabled", kind: .bool, value: "true", sideEffect: "Spotlight'ta web/Siri önerileri görünmez; yerel arama çalışmaya devam eder."),
         Tweak(id: "personalAds", group: "Gizlilik (telemetri)", title: "Kişiselleştirilmiş Apple reklamlarını kapat",
               detail: "Apple reklam kişiselleştirmesi devre dışı.",
-              domain: "com.apple.AdLib", key: "allowApplePersonalizedAdvertising", kind: .bool, value: "false")
+              domain: "com.apple.AdLib", key: "allowApplePersonalizedAdvertising", kind: .bool, value: "false", sideEffect: "App Store/News reklamları sizinle daha az ilgili olur; reklam sayısı azalmaz.")
     ]
 
     // MARK: Önceki değer deposu
 
-    static let stateURL = SafetyGuard.home.appendingPathComponent("Library/Application Support/Cleanstone/tweaks.plist")
+    static let stateURL = SafetyGuard.home.appendingPathComponent("Library/Application Support/Magicstone/tweaks.plist")
 
     /// id → önceki değer ("" = anahtar yoktu)
     static func loadState() -> [String: String] {

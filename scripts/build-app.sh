@@ -1,20 +1,20 @@
 #!/bin/bash
-# Cleanstone.app paketini derler. Gereksinim: Xcode veya Command Line Tools (xcode-select --install).
+# Magicstone.app paketini derler. Gereksinim: Xcode veya Command Line Tools (xcode-select --install).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Gizlilik kontrolü: kaynak kodda ağ API'si varsa derlemeyi durdur.
 if grep -rnE 'URLSession|NWConnection|CFNetwork|URLRequest|Network\.framework|import Network|socket\(' Sources/; then
-  echo "HATA: Kaynak kodda ağ çağrısı bulundu. Cleanstone ağa çıkmamalı." >&2; exit 1
+  echo "HATA: Kaynak kodda ağ çağrısı bulundu. Magicstone ağa çıkmamalı." >&2; exit 1
 fi
 
 swift build -c release --arch arm64 --arch x86_64 2>/dev/null || swift build -c release
-BIN="$(swift build -c release --show-bin-path)/Cleanstone"
-[ -f "$BIN" ] || BIN=".build/apple/Products/Release/Cleanstone"
+BIN="$(swift build -c release --show-bin-path)/Magicstone"
+[ -f "$BIN" ] || BIN=".build/apple/Products/Release/Magicstone"
 
-APP="build/Cleanstone.app"
+APP="build/Magicstone.app"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/Cleanstone"
+cp "$BIN" "$APP/Contents/MacOS/Magicstone"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 # Uygulama ikonu: 1024 PNG'den .icns üret

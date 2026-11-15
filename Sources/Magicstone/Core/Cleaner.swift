@@ -99,9 +99,9 @@ extension Cleaner {
     }
 }
 
-/// Yerel, düz metin işlem günlüğü: ~/Library/Logs/Cleanstone/actions.log. Ağa hiçbir şey gönderilmez.
+/// Yerel, düz metin işlem günlüğü: ~/Library/Logs/Magicstone/actions.log. Ağa hiçbir şey gönderilmez.
 enum AuditLog {
-    static let url = SafetyGuard.home.appendingPathComponent("Library/Logs/Cleanstone/actions.log")
+    static let url = SafetyGuard.home.appendingPathComponent("Library/Logs/Magicstone/actions.log")
 
     static func write(report: CleanReport, dryRun: Bool, permanent: Bool) {
         let fm = FileManager.default

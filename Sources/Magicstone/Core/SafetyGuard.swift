@@ -24,7 +24,7 @@ enum SafetyGuard {
 
     /// Oturum/senkron önbellekleri: adında bunlar geçen öğeler temizlik listesine girmez.
     static let sensitiveNameFragments = ["cloudkit", "akd", "password", "keychain", "auth", "token",
-                                         "credential", "com.apple.ak", "icloud"]
+                                         "credential", "com.apple.ak", "icloud", "shader", "metal", "gpucache"]
 
     static func looksSensitive(_ url: URL) -> Bool {
         let n = url.lastPathComponent.lowercased()
@@ -70,6 +70,7 @@ enum SafetyGuard {
         let inApps = allowApplications && isStrictDescendant(u, of: URL(fileURLWithPath: "/Applications"))
         let inSys = allowApplications && systemLeftoverRoots.contains { isStrictDescendant(u, of: $0) }
         guard inHome || inApps || inSys else { throw Rejection.outsideHome(path) }
+        if KeepList.contains(u) { throw Rejection.protected(path) }
         // Apple'a ait kapsayıcılar / sistem öğeleri asla.
         if u.lastPathComponent.lowercased().contains("com.apple") { throw Rejection.protected(path) }
 
