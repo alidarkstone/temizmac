@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 /// Tek silme noktası. Varsayılan: Çöp Sepeti'ne taşı (geri alınabilir).
 /// Kalıcı silme yalnızca Çöp Sepeti kategorisi için kullanılır.
@@ -17,8 +18,13 @@ enum Cleaner {
                     try fm.removeItem(at: item.url)
                     r.trashed.append(item.url)
                 } else {
-                    var resulting: NSURL?
-                    try fm.trashItem(at: item.url, resultingItemURL: &resulting)
+                    do {
+                        var resulting: NSURL?
+                        try fm.trashItem(at: item.url, resultingItemURL: &resulting)
+                    } catch where allowApplications && item.url.path.hasPrefix("/Applications/") {
+                        // root sahipli uygulamalar (App Store vb.): Finder üzerinden, gerekirse parola sorar.
+                        try recycleViaWorkspace(item.url)
+                    }
                     r.trashed.append(item.url)
                 }
                 r.freedBytes += item.size
@@ -28,6 +34,21 @@ enum Cleaner {
         }
         AuditLog.write(report: r, dryRun: dryRun, permanent: permanent)
         return r
+    }
+}
+
+extension Cleaner {
+    static func recycleViaWorkspace(_ url: URL) throws {
+        let sem = DispatchSemaphore(value: 0)
+        var failure: Error?
+        DispatchQueue.main.async {
+            NSWorkspace.shared.recycle([url]) { _, err in failure = err; sem.signal() }
+        }
+        sem.wait()
+        if let failure { throw failure }
+        if FileManager.default.fileExists(atPath: url.path) {
+            throw CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: url.path])
+        }
     }
 }
 

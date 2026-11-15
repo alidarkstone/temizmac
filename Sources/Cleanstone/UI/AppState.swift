@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 @MainActor
 final class AppState: ObservableObject {
@@ -8,6 +9,7 @@ final class AppState: ObservableObject {
     @Published var results: [String: [FileItem]] = [:]
     @Published var scanning: Set<String> = []
     @Published var lastReport: String?
+    @Published var alertMessage: String?
 
     @Published var largeFiles: [FileItem] = []
     @Published var largeMinMB: Double = 500
@@ -82,17 +84,36 @@ final class AppState: ObservableObject {
         let appItem = FileItem(url: app.url, size: app.size, modified: nil)
         let sel = [appItem] + leftovers.filter(\.selected)
         let dry = dryRun
+        if !dry, let bid = app.bundleID {
+            // Çalışıyorsa önce kapat; açık uygulama taşınamayabilir.
+            for running in NSRunningApplication.runningApplications(withBundleIdentifier: bid) {
+                running.terminate()
+            }
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+        }
         let r = await Task.detached {
             Cleaner.clean(sel, allowedRoots: nil, allowApplications: true, dryRun: dry)
         }.value
         report(r, dry: dry)
-        if !dry { selectedApp = nil; leftovers = []; await loadApps() }
+        if dry {
+            alertMessage = "Önizleme modu açık: \(app.name) kaldırılmadı.\nGerçekten kaldırmak için sağ üstteki Önizleme anahtarını kapatıp tekrar deneyin."
+            return
+        }
+        await loadApps()
+        if FileManager.default.fileExists(atPath: app.url.path) {
+            let why = r.skipped.first { $0.0 == app.url }?.1 ?? "bilinmeyen hata"
+            alertMessage = "\(app.name) kaldırılamadı: \(why)"
+        } else {
+            selectedApp = nil; leftovers = []
+        }
     }
 
     private func report(_ r: CleanReport, dry: Bool) {
         let verb = dry ? "Önizleme: taşınacaktı" : "Temizlendi"
         var s = "\(verb) \(r.trashed.count) öğe, \(r.freedBytes.human)."
-        if !r.skipped.isEmpty { s += " \(r.skipped.count) öğe atlandı (günlüğe bakın)." }
+        if let first = r.skipped.first {
+            s += " \(r.skipped.count) öğe atlandı: \(first.1)"
+        }
         lastReport = s
     }
 }

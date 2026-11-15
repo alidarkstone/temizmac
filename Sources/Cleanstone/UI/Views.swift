@@ -41,6 +41,10 @@ struct ContentView: View {
                 StatusBar()
             }
         }
+        .alert("Cleanstone", isPresented: Binding(get: { s.alertMessage != nil },
+                                                  set: { if !$0 { s.alertMessage = nil } })) {
+            Button("Tamam") { s.alertMessage = nil }
+        } message: { Text(s.alertMessage ?? "") }
         .toolbar {
             Toggle(isOn: $s.dryRun) { Label("Önizleme", systemImage: "eye") }
                 .toggleStyle(.switch)
