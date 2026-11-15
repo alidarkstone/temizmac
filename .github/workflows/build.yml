@@ -26,7 +26,7 @@ jobs:
         run: |
           V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
           if gh release view "v$V" >/dev/null 2>&1; then
-            echo "v$V zaten var"; gh release upload "v$V" build/Cleanstone.zip --clobber
+            gh release upload "v$V" build/Cleanstone.zip --clobber && gh release edit "v$V" --notes-file RELEASE_NOTES.md
           else
             gh release create "v$V" build/Cleanstone.zip --target "$GITHUB_SHA" \
               --title "Cleanstone v$V" --notes-file RELEASE_NOTES.md

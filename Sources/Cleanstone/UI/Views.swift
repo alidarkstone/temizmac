@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-enum Pane: Hashable { case smart, category(String), large, duplicates, uninstall, launch }
+enum Pane: Hashable { case smart, category(String), orphans, large, duplicates, uninstall, launch }
 
 struct ContentView: View {
     @EnvironmentObject var s: AppState
@@ -23,6 +23,9 @@ struct ContentView: View {
                         }.tag(Pane.category(c.id))
                     }
                 }
+                Section("Kalıntılar") {
+                    Label("Eski Uygulama Kalıntıları", systemImage: "archivebox").tag(Pane.orphans)
+                }
                 Section("Araçlar") {
                     Label("Büyük Dosyalar", systemImage: "doc.richtext").tag(Pane.large)
                     Label("Kopya Dosyalar", systemImage: "doc.on.doc").tag(Pane.duplicates)
@@ -38,6 +41,7 @@ struct ContentView: View {
                 case .smart: SmartView()
                 case .category(let id): CategoryView(cat: Categories.all.first { $0.id == id }!)
                 case .large: LargeFilesView()
+                case .orphans: OrphansView()
                 case .duplicates: DuplicatesView()
                 case .uninstall: UninstallerView()
                 case .launch: LaunchAgentsView()
