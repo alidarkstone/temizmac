@@ -29,7 +29,7 @@ enum Cleaner {
                 }
                 r.freedBytes += item.size
             } catch {
-                r.skipped.append((item.url, "\(error)"))
+                r.skipped.append((item.url, friendly(error)))
             }
         }
         AuditLog.write(report: r, dryRun: dryRun, permanent: permanent)
@@ -38,17 +38,50 @@ enum Cleaner {
 }
 
 extension Cleaner {
+    /// root sahipli uygulamalar için: önce Finder (parola isteyebilir, "Geri Koy" çalışır),
+    /// olmazsa macOS yönetici parolası penceresiyle ~/.Trash içine taşı.
     static func recycleViaWorkspace(_ url: URL) throws {
-        let sem = DispatchSemaphore(value: 0)
-        var failure: Error?
-        DispatchQueue.main.async {
-            NSWorkspace.shared.recycle([url]) { _, err in failure = err; sem.signal() }
+        let path = url.path
+        if runAppleScript("""
+            tell application "Finder" to delete (POSIX file \(asLiteral(path)) as alias)
+            """) == nil, !FileManager.default.fileExists(atPath: path) { return }
+
+        let trash = SafetyGuard.home.appendingPathComponent(".Trash")
+        var dest = trash.appendingPathComponent(url.lastPathComponent)
+        if FileManager.default.fileExists(atPath: dest.path) {
+            let stamp = Int(Date().timeIntervalSince1970)
+            dest = trash.appendingPathComponent("\(url.deletingPathExtension().lastPathComponent) \(stamp).\(url.pathExtension)")
         }
-        sem.wait()
-        if let failure { throw failure }
-        if FileManager.default.fileExists(atPath: url.path) {
-            throw CocoaError(.fileWriteNoPermission, userInfo: [NSFilePathErrorKey: url.path])
+        let err = runAppleScript("""
+            do shell script "/bin/mv " & quoted form of \(asLiteral(path)) & " " & quoted form of \(asLiteral(dest.path)) with administrator privileges
+            """)
+        if FileManager.default.fileExists(atPath: path) {
+            throw CocoaError(.fileWriteUnknown, userInfo: [
+                NSLocalizedDescriptionKey: err ?? "Yönetici izni verilmedi."])
         }
+    }
+
+    private static func asLiteral(_ s: String) -> String {
+        "\"" + s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
+    }
+
+    /// Başarılıysa nil, değilse hata mesajı döner. NSAppleScript ana iş parçacığında çalışmalı.
+    private static func runAppleScript(_ source: String) -> String? {
+        let work = { () -> String? in
+            var info: NSDictionary?
+            _ = NSAppleScript(source: source)?.executeAndReturnError(&info)
+            return info.map { ($0[NSAppleScript.errorMessage] as? String) ?? "AppleScript hatası" }
+        }
+        return Thread.isMainThread ? work() : DispatchQueue.main.sync(execute: work)
+    }
+
+    static func friendly(_ error: Error) -> String {
+        if let r = error as? SafetyGuard.Rejection { return r.description }
+        let ns = error as NSError
+        if ns.domain == NSCocoaErrorDomain, [513, 257].contains(ns.code) {
+            return "İzin yok (yönetici izni gerekli veya reddedildi)."
+        }
+        return ns.localizedDescription
     }
 }
 

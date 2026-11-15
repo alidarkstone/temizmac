@@ -73,6 +73,7 @@ struct StatusBar: View {
         HStack {
             Image(systemName: s.dryRun ? "eye" : "trash").foregroundStyle(s.dryRun ? .blue : .red)
             Text(s.lastReport ?? (s.dryRun ? "Önizleme modu açık — hiçbir şey silinmez." : "Gerçek mod: seçilenler Çöp Sepeti'ne taşınır."))
+                .lineLimit(2).truncationMode(.tail)
             Spacer()
             Button("Günlüğü Göster") { NSWorkspace.shared.activateFileViewerSelecting([AuditLog.url]) }
                 .buttonStyle(.link)
