@@ -6,6 +6,7 @@ Telemetri yok, ağ erişimi yok. Her şey bu Mac'te kalır.
 - Akıllı Tarama: önbellek, log, Xcode/geliştirici artıkları, eski indirmeler — tek tıkla temizlik
 - Eski uygulama kalıntıları: daha önce kaldırılmış uygulamaların ~/Library ve /Library'de bıraktığı klasör ve kayıtları bulur
 - Bakım: tek tuşla RAM boşaltma, DNS önbelleği, bakım betikleri, Launch Services, Quick Look, yazı tipi önbelleği, Spotlight yeniden dizinleme, disk doğrulama (tek yönetici parolası)
+- Performans: görsel efekt/Dock hızlandırma, Apple telemetrisini kapatma, üçüncü taraf başlangıç ajanlarını aç/kapa, en çok kaynak kullananlar — hepsi "Geri Al" ile geri alınabilir
 - Büyük dosya ve kopya dosya bulucu
 - Tam uygulama kaldırıcı: ~/Library ve /Library'de 25+ konumda (Containers, Group Containers, Preferences/ByHost, LaunchDaemons, PrivilegedHelperTools, paket makbuzları…) bundle ID ve ekip kimliğiyle artık arar; App Store uygulamaları dahil, tek yönetici parolasıyla
 - Başlangıç öğeleri: yetim LaunchAgent'ları bulur ve kaldırır

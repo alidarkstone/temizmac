@@ -9,6 +9,7 @@ Kişisel, açık kaynak macOS temizleyici. **Telemetri yok, ağ erişimi yok.**
 - Büyük dosya bulucu (ev dizini, eşik ayarlanabilir)
 - Uygulama kaldırıcı (.app + ~/Library artıkları; App Store uygulamaları için yönetici izni)
 - Bakım: tek tuşla sistem önbellek/veritabanı yenileme
+- Performans ayarları (geri alınabilir): animasyonlar, Dock, telemetri kapatma, başlangıç ajanları, kaynak izleme
 - Eski uygulama kalıntıları tarayıcısı
 - Kopya dosya bulucu (SHA-256, yerel)
 - Başlangıç öğeleri: yetim LaunchAgent temizliği
