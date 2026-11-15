@@ -75,12 +75,12 @@ extension Cleaner {
         "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
-    private static func asLiteral(_ s: String) -> String {
+    static func asLiteral(_ s: String) -> String {
         "\"" + s.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 
     /// Başarılıysa nil, değilse hata mesajı döner. NSAppleScript ana iş parçacığında çalışmalı.
-    private static func runAppleScript(_ source: String) -> String? {
+    static func runAppleScript(_ source: String) -> String? {
         let work = { () -> String? in
             var info: NSDictionary?
             _ = NSAppleScript(source: source)?.executeAndReturnError(&info)

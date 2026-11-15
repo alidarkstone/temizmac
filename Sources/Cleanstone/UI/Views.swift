@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-enum Pane: Hashable { case smart, category(String), orphans, large, duplicates, uninstall, launch }
+enum Pane: Hashable { case smart, maintenance, category(String), orphans, large, duplicates, uninstall, launch }
 
 struct ContentView: View {
     @EnvironmentObject var s: AppState
@@ -11,6 +11,7 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $pane) {
                 Label("Akıllı Tarama", systemImage: "sparkles").tag(Pane.smart)
+                Label("Bakım", systemImage: "wrench.and.screwdriver").tag(Pane.maintenance)
                 Section("Temizlik") {
                     ForEach(Categories.all) { c in
                         HStack {
@@ -41,6 +42,7 @@ struct ContentView: View {
                 case .smart: SmartView()
                 case .category(let id): CategoryView(cat: Categories.all.first { $0.id == id }!)
                 case .large: LargeFilesView()
+                case .maintenance: MaintenanceView()
                 case .orphans: OrphansView()
                 case .duplicates: DuplicatesView()
                 case .uninstall: UninstallerView()
