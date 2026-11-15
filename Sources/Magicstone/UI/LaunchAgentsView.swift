@@ -18,6 +18,10 @@ struct LaunchAgentsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button("Tümünü Seç") { for i in items.indices where items[i].isUser { items[i].selected = true } }
+                    .disabled(!items.contains(where: \.isUser))
+                Button("Seçimi Kaldır") { for i in items.indices { items[i].selected = false } }
+                    .disabled(selected.isEmpty)
                 Button("Yenile") { Task { await load() } }.disabled(loading)
                 Button(s.dryRun ? "Önizle" : "Seçilenleri Kaldır") { confirm = true }
                     .buttonStyle(.borderedProminent)

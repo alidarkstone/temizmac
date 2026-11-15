@@ -27,13 +27,21 @@ struct OrphansView: View {
             }.padding()
             List {
                 if !sure.isEmpty {
-                    Section("Kesin kalıntılar — \(sure.count) öğe (seçili)") {
+                    Section {
                         ForEach($sure) { $i in ItemRow(item: $i) }
+                    } header: {
+                        SelectionBar(items: $sure, title: "Kesin kalıntılar")
                     }
                 }
                 if !maybe.isEmpty {
-                    Section("Kontrol edin — \(maybe.count) öğe (aynı firmanın başka ürünü kurulu ya da yakın zamanda kullanılmış)") {
+                    Section {
                         ForEach($maybe) { $i in ItemRow(item: $i) }
+                    } header: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            SelectionBar(items: $maybe, title: "Kontrol edin")
+                            Text("Aynı firmanın başka ürünü kurulu ya da yakın zamanda kullanılmış. Tek tek bakmanız önerilir.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
             }

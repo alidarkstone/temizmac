@@ -227,6 +227,8 @@ struct CategoryView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(s.total(cat.id, selectedOnly: true) == 0)
             }.padding()
+            SelectionBar(items: Binding(get: { s.results[cat.id] ?? [] }, set: { s.results[cat.id] = $0 }))
+                .padding(.horizontal).padding(.bottom, 6)
             List {
                 ForEach(Binding(get: { s.results[cat.id] ?? [] }, set: { s.results[cat.id] = $0 })) { $item in
                     ItemRow(item: $item)
@@ -264,6 +266,7 @@ struct LargeFilesView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(!s.largeFiles.contains(where: \.selected))
             }.padding()
+            SelectionBar(items: $s.largeFiles).padding(.horizontal).padding(.bottom, 6)
             List { ForEach($s.largeFiles) { $i in ItemRow(item: $i) } }
         }
         .confirmationDialog("Seçilen dosyalar Çöp Sepeti'ne taşınsın mı?", isPresented: $confirm) {
@@ -296,6 +299,7 @@ struct UninstallerView: View {
                     Text(app.bundleID ?? "—").font(.caption).foregroundStyle(.secondary)
                     Text("\(s.leftovers.count) ilgili öğe bulundu (\(s.leftovers.reduce(Int64(0)) { $0 + $1.size }.human)). Paket kimliğiyle eşleşenler seçili; yalnızca adla eşleşenleri kontrol edip işaretleyin. /Library öğeleri için yönetici parolası istenir.")
                         .font(.callout).padding(.top, 6)
+                    SelectionBar(items: $s.leftovers)
                     List { ForEach($s.leftovers) { $i in ItemRow(item: $i) } }
                 } else {
                     Text("Bir uygulama seçin").foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -1,4 +1,9 @@
-## Magicstone 1.1.1
+## Magicstone 1.1.2
+
+**1.1.2**
+- Tüm sonuç listelerinde "Tümünü Seç / Seçimi Kaldır" ve seçili sayı/boyut göstergesi. Kalıntılarda "Kesin" ve "Kontrol edin" bölümlerinin ayrı seçim düğmeleri var. Kopyalarda her grupta bir dosya her zaman korunur.
+
+## 1.1.1
 
 **1.1.1 düzeltmeleri**
 - Denetim: disk doluluğu artık Data biriminden ölçülüyor (df ile tutarlı, purgeable notu)

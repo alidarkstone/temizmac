@@ -58,6 +58,26 @@ struct DuplicatesView: View {
             .padding(.horizontal)
             .padding(.bottom, 8)
 
+            if !groups.isEmpty {
+                HStack {
+                    let sel = groups.flatMap(\.files).filter(\.selected)
+                    Text("\(sel.count) dosya seçili · \(sel.reduce(Int64(0)) { $0 + $1.size }.human)")
+                        .monospacedDigit().foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Tüm kopyaları seç (her grupta biri kalır)") {
+                        for g in groups.indices {
+                            for f in groups[g].files.indices { groups[g].files[f].selected = f != 0 }
+                        }
+                    }
+                    Button("Seçimi Kaldır") {
+                        for g in groups.indices {
+                            for f in groups[g].files.indices { groups[g].files[f].selected = false }
+                        }
+                    }
+                }
+                .font(.callout).controlSize(.small)
+                .padding(.horizontal).padding(.bottom, 6)
+            }
             List {
                 ForEach($groups) { $group in
                     Section {
