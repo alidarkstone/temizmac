@@ -33,3 +33,16 @@ struct CleanReport {
 extension Int64 {
     var human: String { ByteCountFormatter.string(fromByteCount: self, countStyle: .file) }
 }
+
+struct DiskInfo {
+    let total: Int64
+    let free: Int64
+    var usedRatio: Double { total > 0 ? Double(total - free) / Double(total) : 0 }
+
+    static func current() -> DiskInfo? {
+        let keys: Set<URLResourceKey> = [.volumeTotalCapacityKey, .volumeAvailableCapacityForImportantUsageKey]
+        guard let v = try? URL(fileURLWithPath: "/").resourceValues(forKeys: keys),
+              let total = v.volumeTotalCapacity else { return nil }
+        return DiskInfo(total: Int64(total), free: v.volumeAvailableCapacityForImportantUsage ?? 0)
+    }
+}

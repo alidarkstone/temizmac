@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-enum Pane: Hashable { case smart, category(String), large, uninstall }
+enum Pane: Hashable { case smart, category(String), large, duplicates, uninstall, launch }
 
 struct ContentView: View {
     @EnvironmentObject var s: AppState
@@ -25,7 +25,9 @@ struct ContentView: View {
                 }
                 Section("Araçlar") {
                     Label("Büyük Dosyalar", systemImage: "doc.richtext").tag(Pane.large)
+                    Label("Kopya Dosyalar", systemImage: "doc.on.doc").tag(Pane.duplicates)
                     Label("Uygulama Kaldırıcı", systemImage: "xmark.app").tag(Pane.uninstall)
+                    Label("Başlangıç Öğeleri", systemImage: "power").tag(Pane.launch)
                 }
             }
             .navigationSplitViewColumnWidth(min: 220, ideal: 240)
@@ -36,7 +38,9 @@ struct ContentView: View {
                 case .smart: SmartView()
                 case .category(let id): CategoryView(cat: Categories.all.first { $0.id == id }!)
                 case .large: LargeFilesView()
+                case .duplicates: DuplicatesView()
                 case .uninstall: UninstallerView()
+                case .launch: LaunchAgentsView()
                 }
                 StatusBar()
             }
@@ -84,23 +88,84 @@ struct StatusBar: View {
 
 struct SmartView: View {
     @EnvironmentObject var s: AppState
+    @State private var confirm = false
+
+    private var selectedTotal: Int64 {
+        Categories.all.filter { $0.id != "trash" }.reduce(Int64(0)) { $0 + s.total($1.id, selectedOnly: true) }
+    }
+
     var body: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 128, height: 128)
-            Text("Cleanstone").font(.largeTitle.bold())
-            Text("Telemetri yok. Ağ erişimi yok. Her şey bu Mac'te kalır.").foregroundStyle(.secondary)
-            Button {
-                Task { await s.scanAll() }
-            } label: { Text("Tara").frame(width: 140) }
-            .controlSize(.large).buttonStyle(.borderedProminent)
-            .disabled(!s.scanning.isEmpty)
-            if !s.results.isEmpty {
-                let total = Categories.all.reduce(Int64(0)) { $0 + s.total($1.id, selectedOnly: true) }
-                Text("Temizlenebilir (seçili): \(total.human)").font(.title3)
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 112, height: 112)
+                    .padding(.top, 24)
+                Text("Cleanstone").font(.largeTitle.bold())
+                Text("Telemetri yok. Ağ erişimi yok. Her şey bu Mac'te kalır.").foregroundStyle(.secondary)
+                DiskBar(info: s.disk)
+                    .frame(maxWidth: 520)
+                HStack(spacing: 12) {
+                    Button { Task { await s.scanAll() } } label: {
+                        Label(s.scanning.isEmpty ? "Tara" : "Taranıyor…", systemImage: "magnifyingglass")
+                            .frame(width: 140)
+                    }
+                    .controlSize(.large)
+                    .disabled(!s.scanning.isEmpty)
+                    Button { confirm = true } label: {
+                        Label(s.dryRun ? "Önizle" : "Temizle (\(selectedTotal.human))", systemImage: "sparkles")
+                            .frame(minWidth: 140)
+                    }
+                    .controlSize(.large).buttonStyle(.borderedProminent)
+                    .disabled(selectedTotal == 0 || !s.scanning.isEmpty)
+                }
+                if !s.results.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(Categories.all) { c in
+                            HStack {
+                                Label(c.title, systemImage: c.symbol)
+                                Spacer()
+                                if s.scanning.contains(c.id) { ProgressView().controlSize(.small) }
+                                else {
+                                    Text(s.total(c.id, selectedOnly: true).human).monospacedDigit()
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 8).padding(.horizontal, 14)
+                            Divider()
+                        }
+                    }
+                    .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
+                    .frame(maxWidth: 520)
+                    Text("Tek tıkla temizlik Çöp Sepeti'ni kapsamaz; onu kendi bölümünden boşaltın.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 20)
             }
-            Spacer()
-        }.frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+        }
+        .task { s.refreshDisk() }
+        .confirmationDialog("Seçili \(selectedTotal.human) Çöp Sepeti'ne taşınsın mı?", isPresented: $confirm) {
+            Button(s.dryRun ? "Önizle" : "Temizle", role: s.dryRun ? nil : .destructive) {
+                Task { await s.cleanAll() }
+            }
+        } message: { Text("Her kategoride seçili olan öğeler taşınır. Geri almak için Çöp Sepeti'ni açın.") }
+    }
+}
+
+struct DiskBar: View {
+    let info: DiskInfo?
+    var body: some View {
+        if let d = info {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Başlangıç Diski").font(.headline)
+                    Spacer()
+                    Text("\(d.free.human) boş / \(d.total.human)").foregroundStyle(.secondary).monospacedDigit()
+                }
+                ProgressView(value: Double(d.total - d.free), total: Double(max(d.total, 1)))
+                    .tint(d.usedRatio > 0.9 ? .red : (d.usedRatio > 0.75 ? .orange : .accentColor))
+            }
+        }
     }
 }
 

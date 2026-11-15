@@ -10,6 +10,23 @@ final class AppState: ObservableObject {
     @Published var scanning: Set<String> = []
     @Published var lastReport: String?
     @Published var alertMessage: String?
+    @Published var disk: DiskInfo?
+
+    func refreshDisk() { disk = DiskInfo.current() }
+
+    /// Akıllı Tarama: Çöp Sepeti hariç tüm kategorilerde seçilileri temizler.
+    func cleanAll() async {
+        let dry = dryRun
+        var total = CleanReport()
+        for cat in Categories.all where cat.id != "trash" {
+            let sel = (results[cat.id] ?? []).filter(\.selected)
+            guard !sel.isEmpty else { continue }
+            let r = await Task.detached { Cleaner.clean(sel, allowedRoots: cat.roots, dryRun: dry) }.value
+            total.trashed += r.trashed; total.skipped += r.skipped; total.freedBytes += r.freedBytes
+        }
+        report(total, dry: dry)
+        if !dry { await scanAll(); refreshDisk() }
+    }
 
     @Published var largeFiles: [FileItem] = []
     @Published var largeMinMB: Double = 500
@@ -108,7 +125,7 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func report(_ r: CleanReport, dry: Bool) {
+    func report(_ r: CleanReport, dry: Bool) {
         let verb = dry ? "Önizleme: taşınacaktı" : "Temizlendi"
         var s = "\(verb) \(r.trashed.count) öğe, \(r.freedBytes.human)."
         if let first = r.skipped.first {

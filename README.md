@@ -7,7 +7,13 @@ Kişisel, açık kaynak macOS temizleyici. **Telemetri yok, ağ erişimi yok.**
 ## Özellikler
 - Akıllı Tarama: önbellekler, günlükler, Xcode/geliştirici artıkları, Çöp Sepeti, 90 günden eski indirmeler
 - Büyük dosya bulucu (ev dizini, eşik ayarlanabilir)
-- Uygulama kaldırıcı (.app + ~/Library artıkları)
+- Uygulama kaldırıcı (.app + ~/Library artıkları; App Store uygulamaları için yönetici izni)
+- Kopya dosya bulucu (SHA-256, yerel)
+- Başlangıç öğeleri: yetim LaunchAgent temizliği
+- Menü çubuğu simgesi: disk durumu, hızlı tarama
+
+## İndir
+[Releases](../../releases) sayfasından `Cleanstone.zip`.
 
 ## Güvenlik
 - **Önizleme (dry-run) varsayılan olarak açık**: kapatana kadar hiçbir şey taşınmaz.
