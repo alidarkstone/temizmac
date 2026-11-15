@@ -273,7 +273,7 @@ struct UninstallerView: View {
                         Button(s.dryRun ? "Önizle" : "Kaldır") { confirm = true }.buttonStyle(.borderedProminent)
                     }
                     Text(app.bundleID ?? "—").font(.caption).foregroundStyle(.secondary)
-                    Text("İlgili dosyalar (Application Support ve Containers varsayılan olarak seçili değildir):")
+                    Text("\(s.leftovers.count) ilgili öğe bulundu (\(s.leftovers.reduce(Int64(0)) { $0 + $1.size }.human)). Paket kimliğiyle eşleşenler seçili; yalnızca adla eşleşenleri kontrol edip işaretleyin. /Library öğeleri için yönetici parolası istenir.")
                         .font(.callout).padding(.top, 6)
                     List { ForEach($s.leftovers) { $i in ItemRow(item: $i) } }
                 } else {

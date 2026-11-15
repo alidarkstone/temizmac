@@ -8,6 +8,7 @@ enum Cleaner {
                       allowApplications: Bool = false, dryRun: Bool) -> CleanReport {
         var r = CleanReport()
         let fm = FileManager.default
+        var privileged: [FileItem] = []
         for item in items {
             do {
                 try SafetyGuard.validate(item.url, allowedRoots: allowedRoots,
@@ -21,9 +22,10 @@ enum Cleaner {
                     do {
                         var resulting: NSURL?
                         try fm.trashItem(at: item.url, resultingItemURL: &resulting)
-                    } catch where allowApplications && item.url.path.hasPrefix("/Applications/") {
-                        // root sahipli uygulamalar (App Store vb.): Finder üzerinden, gerekirse parola sorar.
-                        try recycleViaWorkspace(item.url)
+                    } catch where allowApplications && !SafetyGuard.isStrictDescendant(item.url, of: SafetyGuard.home) {
+                        // root sahipli öğeler: sonda tek seferde yönetici izniyle taşınır.
+                        privileged.append(item)
+                        continue
                     }
                     r.trashed.append(item.url)
                 }
@@ -32,33 +34,45 @@ enum Cleaner {
                 r.skipped.append((item.url, friendly(error)))
             }
         }
+        if !privileged.isEmpty {
+            let err = recyclePrivileged(privileged.map(\.url))
+            for item in privileged {
+                if fm.fileExists(atPath: item.url.path) {
+                    r.skipped.append((item.url, err ?? "Yönetici izni verilmedi."))
+                } else {
+                    r.trashed.append(item.url); r.freedBytes += item.size
+                }
+            }
+        }
         AuditLog.write(report: r, dryRun: dryRun, permanent: permanent)
         return r
     }
 }
 
 extension Cleaner {
-    /// root sahipli uygulamalar için: önce Finder (parola isteyebilir, "Geri Koy" çalışır),
-    /// olmazsa macOS yönetici parolası penceresiyle ~/.Trash içine taşı.
-    static func recycleViaWorkspace(_ url: URL) throws {
-        let path = url.path
-        if runAppleScript("""
-            tell application "Finder" to delete (POSIX file \(asLiteral(path)) as alias)
-            """) == nil, !FileManager.default.fileExists(atPath: path) { return }
+    /// root sahipli öğeler için: önce Finder (tek parola, "Geri Koy" çalışır),
+    /// kalanlar için macOS yönetici parolası penceresiyle ~/.Trash içine taşı. Hata mesajı ya da nil döner.
+    static func recyclePrivileged(_ urls: [URL]) -> String? {
+        let fm = FileManager.default
+        let aliases = urls.map { "(POSIX file \(asLiteral($0.path)) as alias)" }.joined(separator: ", ")
+        _ = runAppleScript("tell application \"Finder\" to delete {\(aliases)}")
+        let remaining = urls.filter { fm.fileExists(atPath: $0.path) }
+        guard !remaining.isEmpty else { return nil }
 
         let trash = SafetyGuard.home.appendingPathComponent(".Trash")
-        var dest = trash.appendingPathComponent(url.lastPathComponent)
-        if FileManager.default.fileExists(atPath: dest.path) {
-            let stamp = Int(Date().timeIntervalSince1970)
-            dest = trash.appendingPathComponent("\(url.deletingPathExtension().lastPathComponent) \(stamp).\(url.pathExtension)")
-        }
-        let err = runAppleScript("""
-            do shell script "/bin/mv " & quoted form of \(asLiteral(path)) & " " & quoted form of \(asLiteral(dest.path)) with administrator privileges
-            """)
-        if FileManager.default.fileExists(atPath: path) {
-            throw CocoaError(.fileWriteUnknown, userInfo: [
-                NSLocalizedDescriptionKey: err ?? "Yönetici izni verilmedi."])
-        }
+        let stamp = Int(Date().timeIntervalSince1970)
+        let cmds = remaining.map { u -> String in
+            var dest = trash.appendingPathComponent(u.lastPathComponent)
+            if fm.fileExists(atPath: dest.path) {
+                dest = trash.appendingPathComponent("\(stamp) \(u.lastPathComponent)")
+            }
+            return "/bin/mv \(shellQuote(u.path)) \(shellQuote(dest.path))"
+        }.joined(separator: "; ")
+        return runAppleScript("do shell script \(asLiteral(cmds)) with administrator privileges")
+    }
+
+    private static func shellQuote(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     private static func asLiteral(_ s: String) -> String {

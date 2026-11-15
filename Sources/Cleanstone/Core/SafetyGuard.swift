@@ -13,7 +13,6 @@ enum SafetyGuard {
         "Library/Messages",
         "Library/Mobile Documents",      // iCloud Drive
         "Library/Application Support/MobileSync", // iPhone yedekleri
-        "Library/Group Containers",
         "Library/Containers/com.apple.mail",
         "Library/Preferences/com.apple.security",
         "Library/Cookies",
@@ -31,6 +30,13 @@ enum SafetyGuard {
         let n = url.lastPathComponent.lowercased()
         return sensitiveNameFragments.contains { n.contains($0) }
     }
+
+    /// Uygulama kaldırırken yönetici izniyle dokunulabilecek sistem konumları.
+    static let systemLeftoverRoots: [URL] = [
+        "/Library/Application Support", "/Library/Caches", "/Library/Preferences",
+        "/Library/LaunchAgents", "/Library/LaunchDaemons", "/Library/PrivilegedHelperTools",
+        "/Library/Logs", "/private/var/db/receipts"
+    ].map { URL(fileURLWithPath: $0) }
 
     static var protectedURLs: [URL] {
         protectedRelative.map { home.appendingPathComponent($0).standardizedFileURL }
@@ -62,7 +68,10 @@ enum SafetyGuard {
 
         let inHome = isStrictDescendant(u, of: home)
         let inApps = allowApplications && isStrictDescendant(u, of: URL(fileURLWithPath: "/Applications"))
-        guard inHome || inApps else { throw Rejection.outsideHome(path) }
+        let inSys = allowApplications && systemLeftoverRoots.contains { isStrictDescendant(u, of: $0) }
+        guard inHome || inApps || inSys else { throw Rejection.outsideHome(path) }
+        // Apple'a ait kapsayıcılar / sistem öğeleri asla.
+        if u.lastPathComponent.lowercased().contains("com.apple") { throw Rejection.protected(path) }
 
         for p in protectedURLs where u == p || isStrictDescendant(u, of: p) || isStrictDescendant(p, of: u) {
             throw Rejection.protected(path)
@@ -71,7 +80,7 @@ enum SafetyGuard {
         if let roots = allowedRoots {
             let std = roots.map { $0.standardizedFileURL }
             if std.contains(u) { throw Rejection.isRoot(path) }
-            guard std.contains(where: { isStrictDescendant(u, of: $0) }) || inApps else {
+            guard std.contains(where: { isStrictDescendant(u, of: $0) }) || inApps || inSys else {
                 throw Rejection.outsideHome(path)
             }
         }
