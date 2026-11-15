@@ -70,7 +70,10 @@ struct PerformanceView: View {
                             }
                         })) {
                             VStack(alignment: .leading) {
-                                Text(a.id).lineLimit(1)
+                                HStack(spacing: 6) {
+                                    Text(a.id).lineLimit(1)
+                                    if a.parentMissing { Badge(text: "Uygulaması yok", color: .red) }
+                                }
                                 Text(a.plist.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                             }
                         }

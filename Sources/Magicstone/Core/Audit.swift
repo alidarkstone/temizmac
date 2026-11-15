@@ -20,6 +20,11 @@ enum Audit {
         r.append("Bellek: " + sh("/usr/sbin/sysctl -n hw.memsize | /usr/bin/awk '{printf \"%.0f GB\", $1/1073741824}'"))
         r.append("Çalışma süresi:" + sh("/usr/bin/uptime"))
 
+        // Süreç ölçümü denetimin ağır taramalarından ÖNCE yapılır; Magicstone'un kendisi hariç.
+        let me = ProcessInfo.processInfo.processIdentifier
+        let procs = Performance.topProcesses(byMemory: true, limit: 12).filter { $0.id != me }.prefix(8)
+        let cpuProcs = Performance.topProcesses(byMemory: false, limit: 12).filter { $0.id != me }.prefix(5)
+
         section("Güvenlik (dokunulmaz, yalnızca durum)")
         r.append("SIP: " + sh("/usr/bin/csrutil status"))
         r.append("FileVault: " + sh("/usr/bin/fdesetup status"))
@@ -27,9 +32,12 @@ enum Audit {
         r.append("Güvenlik duvarı: " + sh("/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate"))
 
         section("Disk")
-        r.append(sh("/bin/df -h /"))
+        // "/" mühürlü salt-okunur sistem birimidir; kullanıcı verisi Data biriminde.
+        r.append(sh("/bin/df -h /System/Volumes/Data"))
         if let d = DiskInfo.current() {
+            r.append("Kapasite: \(d.total.human), kullanılabilir (temizlenebilir alan dahil): \(d.free.human)")
             r.append(String(format: "Doluluk: %%%.0f", d.usedRatio * 100) + (d.usedRatio > 0.85 ? "  ⚠︎ %85 üstü yavaşlatır" : ""))
+            r.append("Not: df'teki 'Avail' macOS'un gerektiğinde boşaltabildiği (purgeable) alanı içermez; bu yüzden iki sayı farklı olabilir.")
         }
         r.append("Yerel Time Machine anlık görüntüleri: " + sh("/usr/bin/tmutil listlocalsnapshots / | /usr/bin/grep -c com.apple || true"))
 
@@ -53,8 +61,11 @@ enum Audit {
 
         section("Üçüncü taraf başlangıç ajanları")
         let agents = Performance.agents()
-        for a in agents { r.append("\(a.enabled ? "AÇIK  " : "KAPALI") \(a.id)") }
+        for a in agents { r.append("\(a.enabled ? "AÇIK  " : "KAPALI") \(a.id)\(a.parentMissing ? "  ⚠︎ uygulaması yok" : "")") }
         let launch = LaunchAgents.scan().filter(\.orphaned)
+        let ownerless = agents.filter(\.parentMissing)
+        r.append("Sahipsiz güncelleyici (uygulaması kaldırılmış): \(ownerless.count)")
+        for a in ownerless { r.append("  - \(a.id) → Performans bölümünden kapatılabilir") }
         r.append("Yetim (programı silinmiş) ajan: \(launch.count)")
         for l in launch { r.append("  - \(l.label) → \(l.program ?? "?")") }
 
@@ -64,10 +75,10 @@ enum Audit {
         r.append("Kesin: \(o.sure.count) öğe (\(sureSize.human)), kontrol edilecek: \(o.maybe.count)")
         for i in o.sure.prefix(30) { r.append("  - \(i.displayPath) (\(i.size.human))") }
 
-        section("En çok bellek kullananlar")
-        for p in Performance.topProcesses(byMemory: true, limit: 8) {
-            r.append(String(format: "%6.0f MB  %%%.1f CPU  %@", p.memMB, p.cpu, p.name))
-        }
+        section("En çok bellek kullananlar (denetim başlamadan önce ölçüldü)")
+        for p in procs { r.append(String(format: "%6.0f MB  %%%.1f CPU  %@", p.memMB, p.cpu, p.name)) }
+        section("En çok işlemci kullananlar")
+        for p in cpuProcs { r.append(String(format: "%%%5.1f CPU  %6.0f MB  %@", p.cpu, p.memMB, p.name)) }
 
         section("Tut listesi")
         r.append(KeepList.all.isEmpty ? "(boş)" : KeepList.all.sorted().joined(separator: "\n"))

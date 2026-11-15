@@ -19,6 +19,10 @@ enum Cleaner {
                     try fm.removeItem(at: item.url)
                     r.trashed.append(item.url)
                 } else {
+                    if allowApplications, item.url.path.hasPrefix("/private/var/db/receipts/") {
+                        privileged.append(item)   // paket kayıtları pkgutil --forget ile silinir
+                        continue
+                    }
                     do {
                         var resulting: NSURL?
                         try fm.trashItem(at: item.url, resultingItemURL: &resulting)
@@ -52,23 +56,34 @@ enum Cleaner {
 extension Cleaner {
     /// root sahipli öğeler için: önce Finder (tek parola, "Geri Koy" çalışır),
     /// kalanlar için macOS yönetici parolası penceresiyle ~/.Trash içine taşı. Hata mesajı ya da nil döner.
-    static func recyclePrivileged(_ urls: [URL]) -> String? {
+    static func recyclePrivileged(_ all: [URL]) -> String? {
         let fm = FileManager.default
-        let aliases = urls.map { "(POSIX file \(asLiteral($0.path)) as alias)" }.joined(separator: ", ")
-        _ = runAppleScript("tell application \"Finder\" to delete {\(aliases)}")
-        let remaining = urls.filter { fm.fileExists(atPath: $0.path) }
-        guard !remaining.isEmpty else { return nil }
+        let receiptDir = "/private/var/db/receipts/"
+        let receipts = all.filter { $0.path.hasPrefix(receiptDir) }
+        let urls = all.filter { !$0.path.hasPrefix(receiptDir) }
 
+        // 1) Finder ile Çöp Sepeti'ne ("Geri Koy" çalışır)
+        if !urls.isEmpty {
+            let aliases = urls.map { "(POSIX file \(asLiteral($0.path)) as alias)" }.joined(separator: ", ")
+            _ = runAppleScript("tell application \"Finder\" to delete {\(aliases)}")
+        }
+        // 2) Kalanlar + paket kayıtları: tek yönetici parolası
+        var cmds: [String] = []
+        var ids: [String] = []
+        for r in receipts {
+            let id = r.deletingPathExtension().lastPathComponent
+            if !ids.contains(id) { ids.append(id) }
+        }
+        cmds += ids.map { "/usr/sbin/pkgutil --forget \(shellQuote($0)) >/dev/null" }
         let trash = SafetyGuard.home.appendingPathComponent(".Trash")
         let stamp = Int(Date().timeIntervalSince1970)
-        let cmds = remaining.map { u -> String in
+        for u in urls where fm.fileExists(atPath: u.path) {
             var dest = trash.appendingPathComponent(u.lastPathComponent)
-            if fm.fileExists(atPath: dest.path) {
-                dest = trash.appendingPathComponent("\(stamp) \(u.lastPathComponent)")
-            }
-            return "/bin/mv \(shellQuote(u.path)) \(shellQuote(dest.path))"
-        }.joined(separator: "; ")
-        return runAppleScript("do shell script \(asLiteral(cmds)) with administrator privileges")
+            if fm.fileExists(atPath: dest.path) { dest = trash.appendingPathComponent("\(stamp) \(u.lastPathComponent)") }
+            cmds.append("/bin/mv \(shellQuote(u.path)) \(shellQuote(dest.path))")
+        }
+        guard !cmds.isEmpty else { return nil }
+        return runAppleScript("do shell script \(asLiteral(cmds.joined(separator: "; "))) with administrator privileges")
     }
 
     private static func shellQuote(_ s: String) -> String {

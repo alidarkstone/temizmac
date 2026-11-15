@@ -150,6 +150,8 @@ enum Performance {
         let id: String      // label
         let plist: URL
         var enabled: Bool
+        /// Güncelleyici olup ait olduğu uygulama artık kurulu değilse true.
+        var parentMissing: Bool = false
     }
 
     static func agents() -> [Agent] {
@@ -162,13 +164,24 @@ enum Performance {
             if let end = l.dropFirst().firstIndex(of: "\"") { disabled.insert(String(l[l.index(after: l.startIndex)..<end])) }
         }
         let dirs = [LaunchAgents.userDir, URL(fileURLWithPath: "/Library/LaunchAgents")]
+        let installed = OrphanScanner.installedBundleIDs().filter { !OrphanScanner.isUpdater($0) }
         var out2: [Agent] = []
         for dir in dirs {
             guard let list = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { continue }
             for u in list where u.pathExtension == "plist" {
                 let label = (NSDictionary(contentsOf: u)?["Label"] as? String) ?? u.deletingPathExtension().lastPathComponent
                 if label.hasPrefix("com.apple.") { continue }
-                out2.append(Agent(id: label, plist: u, enabled: !disabled.contains(label)))
+                var missing = false
+                if OrphanScanner.isUpdater(label) {
+                    let l = label.lowercased()
+                    if l.hasPrefix("com.oracle.java") {
+                        missing = !FileManager.default.fileExists(atPath: "/Library/Internet Plug-Ins/JavaAppletPlugin.plugin")
+                    } else {
+                        let vendor = l.split(separator: ".").prefix(2).joined(separator: ".")
+                        missing = !installed.contains { $0.hasPrefix(vendor + ".") }
+                    }
+                }
+                out2.append(Agent(id: label, plist: u, enabled: !disabled.contains(label), parentMissing: missing))
             }
         }
         return out2.sorted { $0.id < $1.id }

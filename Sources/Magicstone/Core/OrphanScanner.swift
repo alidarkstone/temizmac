@@ -19,8 +19,7 @@ enum OrphanScanner {
     /// Uygulama olmayan ama kalıcı tercih/kayıt tutan bilinen sistem bileşenleri.
     static let excludedPrefixes = [
         "com.apple", "group.com.apple", "org.cups", "com.openssh", "org.openssh", "org.python",
-        "com.microsoft.autoupdate", "com.google.keystone", "com.adobe.acc", "com.oracle.java",
-        "org.mozilla.updater", "com.magicstone", "local.magicstone"
+        "com.adobe.acc", "com.magicstone", "local.magicstone"
     ]
 
     // MARK: Kurulu paket kimlikleri
@@ -41,6 +40,11 @@ enum OrphanScanner {
                 guard exts.contains(u.pathExtension) else { continue }
                 if let b = Bundle(url: u)?.bundleIdentifier { ids.insert(b.lowercased()) }
             }
+        }
+        // Spotlight: diskin herhangi bir yerinde kurulu uygulamalar (tek sorgu, yerel)
+        let (_, found) = Maintenance.runUser("/usr/bin/mdfind \"kMDItemContentType == 'com.apple.application-bundle'\"")
+        for path in found.split(separator: "\n") {
+            if let b = Bundle(path: String(path))?.bundleIdentifier { ids.insert(b.lowercased()) }
         }
         // Çalışan süreçler (komut satırı araçları, ajanlar)
         for app in NSWorkspace.shared.runningApplications {
@@ -75,7 +79,8 @@ enum OrphanScanner {
 
     static func scan() -> Result {
         let installed = installedBundleIDs()
-        let vendors = Set(installed.map { $0.split(separator: ".").prefix(2).joined(separator: ".") })
+        // Güncelleyiciler firmanın "kurulu ürünü" sayılmaz (Office silinince MS AutoUpdate tek başına kalabilir).
+        let vendors = Set(installed.filter { !isUpdater($0) }.map { $0.split(separator: ".").prefix(2).joined(separator: ".") })
         let weekAgo = Date().addingTimeInterval(-7 * 86400)
         let lib = SafetyGuard.home.appendingPathComponent("Library")
         let dirs = userSubdirs.map { lib.appendingPathComponent($0) } + systemDirs.map { URL(fileURLWithPath: $0) }
@@ -145,6 +150,12 @@ enum OrphanScanner {
             if !anyExists { dead.insert(lid) }
         }
         return dead
+    }
+
+    static func isUpdater(_ bid: String) -> Bool {
+        let b = bid.lowercased()
+        return ["keystone", "updater", "autoupdate", "update.agent", "softwareupdate", "java-updater", "steamclean"]
+            .contains { b.contains($0) }
     }
 
     private static func isInstalled(_ bid: String, installed: Set<String>) -> Bool {

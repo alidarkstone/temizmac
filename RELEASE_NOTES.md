@@ -1,4 +1,13 @@
-## Magicstone 1.1.0
+## Magicstone 1.1.1
+
+**1.1.1 düzeltmeleri**
+- Denetim: disk doluluğu artık Data biriminden ölçülüyor (df ile tutarlı, purgeable notu)
+- Denetim: süreçler taramadan önce ölçülüyor; Magicstone kendini listelemiyor
+- Kalıntılar: Spotlight ile diskin her yerindeki kurulu uygulamalar kontrol ediliyor (yanlış pozitif azaldı)
+- Paket kayıtları `pkgutil --forget` ile siliniyor; dosyalar elle taşınmıyor
+- Uygulaması kaldırılmış güncelleyiciler (Google/Microsoft/Java…) işaretleniyor
+
+## 1.1.0
 
 Telemetri yok, ağ erişimi yok. Her şey bu Mac'te kalır.
 
