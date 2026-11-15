@@ -82,8 +82,8 @@ struct SmartView: View {
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
-            Image(systemName: "sparkles").font(.system(size: 64)).foregroundStyle(.tint)
-            Text("TemizMac").font(.largeTitle.bold())
+            Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 128, height: 128)
+            Text("Cleanstone").font(.largeTitle.bold())
             Text("Telemetri yok. Ağ erişimi yok. Her şey bu Mac'te kalır.").foregroundStyle(.secondary)
             Button {
                 Task { await s.scanAll() }

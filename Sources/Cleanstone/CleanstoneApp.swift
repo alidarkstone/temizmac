@@ -1,10 +1,10 @@
 import SwiftUI
 
 @main
-struct TemizMacApp: App {
+struct CleanstoneApp: App {
     @StateObject private var state = AppState()
     var body: some Scene {
-        WindowGroup("TemizMac") {
+        WindowGroup("Cleanstone") {
             ContentView()
                 .environmentObject(state)
                 .frame(minWidth: 860, minHeight: 540)

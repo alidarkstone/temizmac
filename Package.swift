@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "TemizMac",
+    name: "Cleanstone",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "TemizMac",
-            path: "Sources/TemizMac"
+            name: "Cleanstone",
+            path: "Sources/Cleanstone"
         )
     ]
 )
